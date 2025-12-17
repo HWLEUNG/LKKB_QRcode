@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LKKB 二維碼生成器</title>
+    <title>LKKB QR Code Generator</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 設定 Tailwind 配置，使用 Inter 字體 -->
@@ -50,18 +50,14 @@
     <!-- 引入 qrcode.js 函式庫 -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
+<!-- 這裡使用 flex items-center justify-center min-h-screen 確保內容垂直和水平置中 -->
 <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4 font-sans">
 
     <div class="w-full max-w-lg bg-white p-6 md:p-8 rounded-xl shadow-2xl border border-blue-100">
 
         <h1 class="text-3xl font-extrabold text-center text-blue-800 mb-6 border-b-2 border-blue-200 pb-2">
-            <!-- 標題圖案放大一倍：h-8 w-8 變為 h-16 w-16 -->
-            <img src="https://raw.githubusercontent.com/HWLEUNG/LKKB_QRcode/main/Blue.png" 
-                 alt="LKKB 品牌圖案" 
-                 class="h-16 w-16 inline-block mr-3 align-middle"
-                 onerror="this.onerror=null; this.src='https://placehold.co/64x64/1E3A8A/FFFFFF?text=LKKB';" 
-            >
-            <span class="text-indigo-600">LKKB</span> 二維碼生成器
+            <!-- 標題圖案已應使用者要求移除 -->
+            <span class="text-indigo-600">LKKB</span> QR Code Generator
         </h1>
         
         <!-- 輸入區域 -->
@@ -101,7 +97,7 @@
              <!-- 初始顯示圖片和提示文字 -->
              <!-- 預設提示圖案放大一倍：h-20 w-20 變為 h-40 w-40 -->
              <img src="https://raw.githubusercontent.com/HWLEUNG/LKKB_QRcode/main/Blue.png" 
-                 alt="LKKB 品牌圖案 - 點擊生成" 
+                 alt="LKKB Brand Logo - Click to Generate" 
                  class="h-40 w-40 opacity-70"
                  onerror="this.onerror=null; this.src='https://placehold.co/160x160/1E3A8A/FFFFFF?text=LKKB';" 
             >
@@ -121,7 +117,7 @@
         // 定義初始內容的 HTML 結構，用於錯誤或空白輸入時重置顯示區域
         const initialQrPlaceholderHtml = `
             <img src="https://raw.githubusercontent.com/HWLEUNG/LKKB_QRcode/main/Blue.png" 
-                 alt="LKKB 品牌圖案 - 點擊生成" 
+                 alt="LKKB Brand Logo - Click to Generate" 
                  class="h-40 w-40 opacity-70"
                  onerror="this.onerror=null; this.src='https://placehold.co/160x160/1E3A8A/FFFFFF?text=LKKB';" 
             >
@@ -233,8 +229,8 @@
                 }, 500); // 增加延遲到 500ms，確保 canvas 渲染完成
                 
             } catch (error) {
-                console.error("QR Code Generation Error:", error);
-                setStatus('生成二維碼時發生錯誤。', 'text-red-500 bg-red-100');
+                    console.error("QR Code Generation Error:", error);
+                    setStatus('生成二維碼時發生錯誤。', 'text-red-500 bg-red-100');
             }
         }
 
