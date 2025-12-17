@@ -1,220 +1,325 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>客製化 QR Code 生成器</title>
+    <title>LKKB 二維碼生成器</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 qrcode.js 庫 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- 設定 Tailwind 配置，使用 Inter 字體 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
     <style>
-        /* 設定字體 */
-        body { font-family: 'Inter', sans-serif; }
-        /* QR Code 容器居中 */
-        #qrcode {
+        /* 自定義樣式來確保容器寬度在不同設備上都良好 */
+        #qrcode-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 16px;
-            border-radius: 0.5rem;
-            background-color: #ffffff;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            /* 恢復到較短的預覽高度，約 300px QR + padding，避免預覽畫面過長 */
+            min-height: 350px; 
+            padding: 1rem;
+            background-color: #f7f7f7;
+            border-radius: 0.75rem;
+            border: 1px solid #e5e7eb;
+            /* 預設狀態顯示一個提示，而不是空的白色背景 */
+            color: #6b7280;
+            font-size: 0.875rem;
         }
-        /* 隱藏 qrcode.js 預設生成的 canvas 或 table，以便我們操作 */
-        #qrcode > canvas, #qrcode > table {
-            display: none;
+
+        /* 隱藏 qrcode.js 生成的 canvas 邊框（如果它顯示出來） */
+        #qrcode-container canvas {
+            display: block;
         }
-        /* 確保生成的最終 canvas 居中且可見 */
-        #qrCanvas {
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+        /* 新增規則：確保生成的 QR 碼 (Canvas/Table) 在容器內響應式縮小，保持預覽畫面長度適中 */
+        #qrcode-container canvas, 
+        #qrcode-container table {
+            max-width: 100%;
+            height: auto !important; /* 覆蓋 inline height 屬性，確保等比例縮放 */
         }
     </style>
+    <!-- 引入 qrcode.js 函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4 font-sans">
 
-    <div class="max-w-xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl space-y-6">
-        <h1 class="text-3xl font-extrabold text-gray-900 text-center">客製化 QR Code 生成系統</h1>
-        <p class="text-center text-gray-500">輸入內容，並將您的圖片 (<span class="font-semibold">Blue.jpg</span>) 嵌入為中心 Logo。</p>
+    <div class="w-full max-w-lg bg-white p-6 md:p-8 rounded-xl shadow-2xl border border-blue-100">
 
+        <h1 class="text-3xl font-extrabold text-center text-blue-800 mb-6 border-b-2 border-blue-200 pb-2">
+            <!-- 標題圖案放大一倍：h-8 w-8 變為 h-16 w-16 -->
+            <img src="https://raw.githubusercontent.com/HWLEUNG/LKKB_QRcode/main/Blue.png" 
+                 alt="LKKB 品牌圖案" 
+                 class="h-16 w-16 inline-block mr-3 align-middle"
+                 onerror="this.onerror=null; this.src='https://placehold.co/64x64/1E3A8A/FFFFFF?text=LKKB';" 
+            >
+            <span class="text-indigo-600">LKKB</span> 二維碼生成器
+        </h1>
+        
         <!-- 輸入區域 -->
-        <div class="space-y-4">
-            <label for="qrContent" class="block text-sm font-medium text-gray-700">QR Code 內容 (網址或文字)</label>
-            <input type="text" id="qrContent" placeholder="例如：https://www.google.com 或 您的訊息" value="https://www.gemini.google.com"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
-            
-            <button id="generateBtn"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
-                生成帶 Logo 的 QR Code
+        <div class="mb-4">
+            <label for="dataInput" class="block text-sm font-medium text-gray-700 mb-2">要編碼的內容 (文字或網址):</label>
+            <input type="text" id="dataInput" placeholder="輸入要編碼的文字或網址..."
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 shadow-sm"
+                   value=""> <!-- 已移除預設值 -->
+        </div>
+
+        <!-- 按鈕區域 -->
+        <div class="flex flex-col sm:flex-row gap-3 mb-6">
+            <button id="generateBtn" onclick="generateQrCode()"
+                    class="w-full sm:w-1/2 flex items-center justify-center px-4 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition duration-200 shadow-md transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                生成二維碼
+            </button>
+
+            <button id="downloadBtn" onclick="downloadQrCode()" disabled
+                    class="w-full sm:w-1/2 flex items-center justify-center px-4 py-3 bg-green-500 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 transition duration-200 shadow-md transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 12l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                下載二維碼 (PNG)
             </button>
         </div>
 
-        <!-- QR Code 顯示區域 -->
-        <div id="qrcodeContainer" class="mt-8 pt-6 border-t border-gray-200">
-            <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">生成的 QR Code (含 Logo)</h2>
-            <div id="qrcode" class="mx-auto w-64 h-64 bg-gray-200 rounded-xl flex items-center justify-center">
-                <!-- 最終的帶 Logo QR Code 將繪製到這裡的 canvas 上 -->
-                <canvas id="qrCanvas" width="256" height="256" class="hidden"></canvas>
-            </div>
-            <p id="statusMessage" class="text-center text-sm mt-4 text-red-500 hidden">
-                <!-- 錯誤或狀態訊息 -->
-            </p>
+        <!-- 狀態與顯示區域 -->
+        <div id="statusMessage" class="text-center text-sm text-gray-500 mb-4 p-2 bg-gray-100 rounded-lg">
+            請輸入內容並點擊「生成二維碼」。
         </div>
 
+        <!-- QR 碼顯示區域 -->
+        <div id="qrcode-container" class="transition-all duration-300 flex-col space-y-3">
+             <!-- 初始顯示圖片和提示文字 -->
+             <!-- 預設提示圖案放大一倍：h-20 w-20 變為 h-40 w-40 -->
+             <img src="https://raw.githubusercontent.com/HWLEUNG/LKKB_QRcode/main/Blue.png" 
+                 alt="LKKB 品牌圖案 - 點擊生成" 
+                 class="h-40 w-40 opacity-70"
+                 onerror="this.onerror=null; this.src='https://placehold.co/160x160/1E3A8A/FFFFFF?text=LKKB';" 
+            >
+            <span class="text-base text-gray-500 font-semibold">請輸入內容後，點擊「生成二維碼」。</span>
+        </div>
     </div>
 
     <script>
-        // 設定圖片路徑，這是您上傳的 Blue.jpg 的檔案 ID
-        const LOGO_IMAGE_SRC = "uploaded:Blue.jpg-5c49ecb3-551e-4f74-8c9b-1c14d3c7ad8c";
-        const QR_CODE_SIZE = 256; // 像素寬度/高度
-        const LOGO_SIZE_RATIO = 0.25; // Logo 佔 QR Code 尺寸的比例 (25%)
-        const LOGO_SIZE = QR_CODE_SIZE * LOGO_SIZE_RATIO;
-        const LOGO_X = (QR_CODE_SIZE - LOGO_SIZE) / 2;
-        const LOGO_Y = (QR_CODE_SIZE - LOGO_SIZE) / 2;
-
-        let qrCodeInstance = null; // 儲存 qrcode.js 實例
-
-        // 獲取 DOM 元素
-        const qrContentInput = document.getElementById('qrContent');
+        // 初始化變數
+        let qrCodeInstance = null;
+        const qrCodeContainer = document.getElementById('qrcode-container');
+        const dataInput = document.getElementById('dataInput');
         const generateBtn = document.getElementById('generateBtn');
-        const qrcodeContainer = document.getElementById('qrcode');
+        const downloadBtn = document.getElementById('downloadBtn');
         const statusMessage = document.getElementById('statusMessage');
-        const qrCanvas = document.getElementById('qrCanvas');
-        const ctx = qrCanvas.getContext('2d');
-        
-        // 載入 Logo 圖片
-        const logoImg = new Image();
-        logoImg.crossOrigin = "anonymous"; // 必須設定 crossOrigin 才能在 canvas 上繪圖
-        logoImg.src = LOGO_IMAGE_SRC;
-        let isLogoLoaded = false;
-        
-        logoImg.onload = () => {
-            isLogoLoaded = true;
-            statusMessage.classList.add('hidden');
-            // 如果頁面初始時圖片就載入完成，可以自動生成一次
-            if (qrContentInput.value) {
-                generateQrWithLogo();
-            }
-        };
 
-        logoImg.onerror = () => {
-            isLogoLoaded = false;
-            statusMessage.textContent = '錯誤：Logo 圖片載入失敗，將只生成普通 QR Code。';
-            statusMessage.classList.remove('hidden');
-        };
+        // 定義初始內容的 HTML 結構，用於錯誤或空白輸入時重置顯示區域
+        const initialQrPlaceholderHtml = `
+            <img src="https://raw.githubusercontent.com/HWLEUNG/LKKB_QRcode/main/Blue.png" 
+                 alt="LKKB 品牌圖案 - 點擊生成" 
+                 class="h-40 w-40 opacity-70"
+                 onerror="this.onerror=null; this.src='https://placehold.co/160x160/1E3A8A/FFFFFF?text=LKKB';" 
+            >
+            <span class="text-base text-gray-500 font-semibold">請輸入內容後，點擊「生成二維碼」。</span>
+        `;
 
         /**
-         * 處理生成 QR Code 的主要邏輯
+         * 顯示狀態訊息。
+         * @param {string} message - 要顯示的訊息。
+         * @param {string} color - Tailwind text color class (e.g., 'text-gray-500', 'text-red-500').
          */
-        function generateQrWithLogo() {
-            const content = qrContentInput.value.trim();
-            if (!content) {
-                statusMessage.textContent = '請輸入 QR Code 內容。';
-                statusMessage.classList.remove('hidden');
+        function setStatus(message, color = 'text-gray-500') {
+            statusMessage.textContent = message;
+            statusMessage.className = `text-center text-sm ${color} mb-4 p-2 bg-gray-100 rounded-lg`;
+        }
+
+        /**
+         * 處理生成 QR 碼的邏輯。
+         */
+        function generateQrCode() {
+            const data = dataInput.value.trim();
+            downloadBtn.disabled = true;
+
+            // 確保容器在生成 QR 碼前是 flex 居中模式
+            qrCodeContainer.classList.remove('flex-col', 'space-y-3');
+
+            if (!data) {
+                setStatus('錯誤：請輸入有效的內容。', 'text-red-500 bg-red-100');
+                // 清空 QR 碼顯示區，並重新顯示圖片和提示文字
+                qrCodeContainer.innerHTML = initialQrPlaceholderHtml;
+                qrCodeContainer.classList.add('flex-col', 'space-y-3');
+                qrCodeInstance = null;
                 return;
             }
 
-            statusMessage.classList.add('hidden');
-            generateBtn.textContent = '正在生成...';
-            generateBtn.disabled = true;
+            setStatus('正在生成二維碼...', 'text-blue-600 bg-blue-100');
 
-            // 1. 清理舊的 QR Code 顯示
-            // 由於 qrcode.js 會創建一個新的 canvas 或 table，我們需要清理容器
-            // 這裡我們使用一個臨時的 div 來讓 qrcode.js 在後台生成
-            const tempDiv = document.createElement('div');
-            tempDiv.style.display = 'none';
-            qrcodeContainer.appendChild(tempDiv);
-            qrCanvas.classList.add('hidden'); // 暫時隱藏最終 canvas
-
-            // 2. 使用 qrcode.js 生成基本的 QR Code
+            // 1. 清理舊的 QR 碼
+            qrCodeContainer.innerHTML = '';
+            
+            // 2. 銷毀舊的實例（如果存在）
+            if (qrCodeInstance) {
+                qrCodeInstance = null;
+            }
+            
+            // 3. 生成新的 QR 碼實例
             try {
-                if (qrCodeInstance) {
-                    qrCodeInstance.clear(); // 清理舊實例
-                }
-                
-                qrCodeInstance = new QRCode(tempDiv, {
-                    text: content,
-                    width: QR_CODE_SIZE,
-                    height: QR_CODE_SIZE,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H // 使用高錯誤修正等級以容納 Logo
+                // 設定 QR 碼尺寸為 600x600 (用於高解析度下載)
+                const targetSize = 600;
+
+                // 使用 qrcode.js 庫
+                qrCodeInstance = new QRCode(qrCodeContainer, {
+                    text: data,
+                    width: targetSize, 
+                    height: targetSize, 
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H // 選擇高容錯率以容納 Logo
                 });
 
-                // qrcode.js 是異步的，使用 setTimeout 等待它完成繪製
+                // 由於 qrcode.js 是異步渲染，我們需要等待一下才能插入 Logo
                 setTimeout(() => {
-                    // 3. 獲取 qrcode.js 生成的 Canvas 元素
-                    const baseCanvas = tempDiv.querySelector('canvas');
-                    if (!baseCanvas) {
-                        statusMessage.textContent = 'QR Code 基礎圖形生成失敗。';
-                        statusMessage.classList.remove('hidden');
-                        cleanup();
-                        return;
-                    }
+                    const canvas = qrCodeContainer.querySelector('canvas');
 
-                    // 4. 將基礎 QR Code 繪製到我們自己的最終 Canvas 上
-                    ctx.clearRect(0, 0, QR_CODE_SIZE, QR_CODE_SIZE);
-                    ctx.drawImage(baseCanvas, 0, 0, QR_CODE_SIZE, QR_CODE_SIZE);
+                    if (canvas) {
+                        const ctx = canvas.getContext('2d');
+                        const img = new Image();
+                        // 確保下載功能相容性
+                        img.crossOrigin = "Anonymous"; 
+                        
+                        img.onload = function() {
+                            console.log('LKKB Logo 圖像載入成功，正在繪製到 QR 碼上。');
+                            const qrSize = targetSize; // 600
+                            
+                            // 保持 Logo 區域佔約 30% 寬度（H 級容錯率的安全範圍）
+                            const totalLogoAreaSize = 180; // 600 * 30%
+                            const padding = 5; 
+                            const logoSize = totalLogoAreaSize - 2 * padding; // 170x170
+                            
+                            // 計算置中座標 (600 - 180) / 2 = 210
+                            const x = (qrSize - totalLogoAreaSize) / 2;
+                            const y = (qrSize - totalLogoAreaSize) / 2;
 
-                    // 5. 繪製 Logo 圖片
-                    if (isLogoLoaded) {
-                        // 繪製白色圓形背景以提高 Logo 可讀性 (可選)
-                        ctx.beginPath();
-                        ctx.arc(
-                            QR_CODE_SIZE / 2, // 圓心 X
-                            QR_CODE_SIZE / 2, // 圓心 Y
-                            LOGO_SIZE / 2 + 5, // 半徑 (比 Logo 稍大)
-                            0, 
-                            2 * Math.PI
-                        );
-                        ctx.fillStyle = 'white';
-                        ctx.fill();
+                            // 1. 繪製白色背景
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fillRect(x, y, totalLogoAreaSize, totalLogoAreaSize);
 
-                        // 繪製 Logo 圖片
-                        ctx.drawImage(logoImg, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
+                            // 2. 繪製 Logo
+                            ctx.drawImage(img, x + padding, y + padding, logoSize, logoSize);
+                            
+                            // 完成後啟用下載並設定狀態
+                            downloadBtn.disabled = false;
+                            setStatus('二維碼生成成功！下載前請記得測試。', 'text-green-600 bg-green-100');
+                        };
+                        
+                        img.onerror = function() {
+                            console.error('錯誤：LKKB Logo 載入失敗或路徑無效。QR 碼將不含 Logo。');
+                            // 即使 Logo 載入失敗，QR 碼主體仍可用
+                            downloadBtn.disabled = false;
+                            setStatus('二維碼生成成功！下載前請記得測試 (Logo載入失敗)。', 'text-orange-500 bg-orange-100');
+                        };
+                        
+                        img.src = 'https://raw.githubusercontent.com/HWLEUNG/LKKB_QRcode/main/Blue.png';
                     } else {
-                        statusMessage.textContent = 'Logo 圖片未載入，已生成無 Logo 的普通 QR Code。';
-                        statusMessage.classList.remove('hidden');
+                        console.error("Canvas element not found after QR code generation.");
+                        downloadBtn.disabled = false;
+                        setStatus('二維碼生成成功！下載前請記得測試。', 'text-green-600 bg-green-100');
                     }
-
-                    // 6. 顯示最終的 Canvas 並清理臨時元素
-                    qrCanvas.classList.remove('hidden');
-                    cleanup();
-
-                }, 500); // 延遲 500ms 確保 qrcode.js 完成繪圖
-
-            } catch (e) {
-                statusMessage.textContent = `生成過程中發生錯誤: ${e.message}`;
-                statusMessage.classList.remove('hidden');
-                cleanup();
-            }
-
-            function cleanup() {
-                // 清除臨時的 div 
-                if (tempDiv.parentNode === qrcodeContainer) {
-                    qrcodeContainer.removeChild(tempDiv);
-                }
-                generateBtn.textContent = '生成帶 Logo 的 QR Code';
-                generateBtn.disabled = false;
+                }, 500); // 增加延遲到 500ms，確保 canvas 渲染完成
+                
+            } catch (error) {
+                console.error("QR Code Generation Error:", error);
+                setStatus('生成二維碼時發生錯誤。', 'text-red-500 bg-red-100');
             }
         }
 
-        // 綁定事件監聽器
-        generateBtn.addEventListener('click', generateQrWithLogo);
-
-        // 初始化時，如果 Logo 已經載入，則自動生成一次
-        document.addEventListener('DOMContentLoaded', () => {
-            if (isLogoLoaded && qrContentInput.value) {
-                // 延遲執行確保所有元素都已渲染
-                setTimeout(generateQrWithLogo, 100); 
-            } else if (!isLogoLoaded) {
-                 statusMessage.textContent = 'Logo 圖片仍在載入中，請稍候。';
-                 statusMessage.classList.remove('hidden');
+        /**
+         * 處理下載 QR 碼為 PNG 檔案的邏輯。
+         */
+        function downloadQrCode() {
+            if (downloadBtn.disabled || !qrCodeInstance) {
+                setStatus('無法下載。請先生成二維碼。', 'text-red-500 bg-red-100');
+                return;
             }
-        });
+
+            setStatus('正在準備下載...', 'text-yellow-600 bg-yellow-100');
+
+            // qrcode.js 會將 QR 碼渲染到 canvas 元素中
+            const canvas = qrCodeContainer.querySelector('canvas');
+
+            if (canvas) {
+                // 取得 canvas 內容的 Data URL
+                const dataURL = canvas.toDataURL('image/png');
+                
+                // 創建一個虛擬連結 a 元素
+                const link = document.createElement('a');
+                link.href = dataURL;
+                
+                const data = dataInput.value.trim();
+                let filename = '';
+                let cleanedName = '';
+
+                try {
+                    let url;
+                    try {
+                        // 1. 嘗試直接解析 URL (需要協定 e.g., http://)
+                        url = new URL(data);
+                    } catch (e) {
+                        // 2. 如果失敗，嘗試添加 https:// 再解析
+                        try {
+                            url = new URL('https://' + data);
+                        } catch (e2) {
+                            // 3. 徹底失敗，不是有效的 URL
+                            url = null;
+                        }
+                    }
+
+                    if (url && url.hostname) {
+                        let domain = url.hostname;
+                        // 移除 www.
+                        domain = domain.replace(/^www\./, '');
+                        
+                        // 清理 domain name 中的點號，替換為底線
+                        cleanedName = domain.replace(/\./g, '_');
+                        filename = `LKKB_${cleanedName}.png`;
+                    } else {
+                        // 拋出錯誤，讓 catch 區塊處理為文本命名
+                        throw new Error('Not a recognizable URL.');
+                    }
+
+                } catch (e) {
+                    // Fallback: 使用文本截斷邏輯
+                    const dataText = data.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_');
+                    cleanedName = dataText || 'default';
+                    filename = `LKKB_QRCode_${cleanedName}.png`;
+                }
+
+                // 設定下載檔名
+                link.download = filename;
+
+                // 模擬點擊下載
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                setStatus('二維碼已開始下載。', 'text-green-600 bg-green-100');
+
+            } else {
+                // 如果找不到 canvas，可能是因為 qrcode.js 使用了 table/svg
+                setStatus('下載失敗：找不到 QR 碼圖像元素。', 'text-red-500 bg-red-100');
+            }
+        }
+
+        // 頁面載入時不需要自動生成，但需要確保初始狀態是正確的
+        // window.onload = function() {
+        //     // 確保初始狀態是圖片和提示文字
+        // };
 
     </script>
-
 </body>
 </html>
